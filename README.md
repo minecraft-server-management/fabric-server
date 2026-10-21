@@ -58,7 +58,7 @@ The server can be configured using environment variables.
 | `EULA`                     | `false`          | Must be set to `true`                                                     |
 | `MEMORY`                   | `4G`             | Java heap size, e.g. `2G` or `4096M`                                      |
 | `MINECRAFT_VERSION`        | `latest-release` | Minecraft version, or `latest`, `latest-release`, `latest-snapshot`       |
-| `FABRIC_VERSION`           | `latest-stable`  | Fabric Loader version, or `latest`, `latest-stable`, `latest-unstable`    |
+| `FABRIC_LOADER_VERSION`    | `latest-stable`  | Fabric Loader version, or `latest`, `latest-stable`, `latest-unstable`    |
 | `FABRIC_INSTALLER_VERSION` | `latest-stable`  | Fabric Installer version, or `latest`, `latest-stable`, `latest-unstable` |
 
 ## Data Persistence
