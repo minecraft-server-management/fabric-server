@@ -1,4 +1,5 @@
 # Fabric Minecraft Server
+[![Build and Publish Docker Image](https://github.com/minecraft-server-management/fabric-server/actions/workflows/build_and_push.yml/badge.svg)](https://github.com/minecraft-server-management/fabric-server/actions/workflows/build_and_push.yml)
 
 A Docker-based Minecraft fabricmc server.
 
