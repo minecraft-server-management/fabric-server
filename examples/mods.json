@@ -3,6 +3,6 @@
   "removeOld": true,
   "downloadDependencies": true,
   "mods": [
-    { "platform": "modrinth", "id": "abcd1234" }
+    { "platform": "modrinth", "id": "fabric-api" }
   ]
 }

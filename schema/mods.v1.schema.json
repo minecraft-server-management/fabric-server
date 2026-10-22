@@ -25,7 +25,8 @@
           },
           "id": {
             "type": "string",
-            "description": "ID of the mod."
+            "description": "ID of the mod.",
+            "examples": [ "fabric-api" ]
           }
         }
       }
