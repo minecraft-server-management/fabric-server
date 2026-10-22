@@ -7,14 +7,21 @@ set -Eeuo pipefail
 : "${MINECRAFT_VERSION:=latest-release}"
 : "${FABRIC_LOADER_VERSION:=latest-stable}"
 : "${FABRIC_INSTALLER_VERSION:=latest-stable}"
+: "${MODS_CONFIG_FILE:=/config/mods.json}"
 
 DATA_DIR="/data"
 MANIFEST_FILE="${DATA_DIR}/.fabric-manifest.json"
+
 FABRIC_META_URL="https://meta.fabricmc.net"
 FABRIC_VERSIONS_META_URL="${FABRIC_META_URL}/v2/versions"
 FABRIC_INSTALLER_META_URL="${FABRIC_VERSIONS_META_URL}/installer"
 FABRIC_LOADER_META_URL="${FABRIC_VERSIONS_META_URL}/loader"
-GAME_VERSIONS_URL="${FABRIC_VERSIONS_META_URL}/game"
+FABRIC_LAUNCHER_FILE="fabric-server-launcher.jar"
+FABRIC_LAUNCHER_PATH="./${FABRIC_LAUNCHER_FILE}"
+FABRIC_GAME_VERSIONS_URL="${FABRIC_VERSIONS_META_URL}/game"
+
+MODRINTH_API="https://api.modrinth.com/v2"
+
 
 cd "$DATA_DIR"
 
@@ -47,21 +54,21 @@ log "Resolving Minecraft version ..."
 
 if [[ "$MINECRAFT_VERSION" == "latest" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
       jq -er '.[0].version'
   )" || die "Unable to resolve the latest Minecraft version."
 elif [[ "$MINECRAFT_VERSION" == "latest-release" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
       jq -er '[.[] | select(.stable == true)][0].version'
   )" || die "Unable to resolve the latest release Minecraft version."
 elif [[ "$MINECRAFT_VERSION" == "latest-snapshot" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
       jq -er '[.[] | select(.stable == false)][0].version'
   )" || die "Unable to resolve the latest snapshot Minecraft version."
 else
-  curl -fsSL --retry 3 "$GAME_VERSIONS_URL" |
+  curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
     jq -e --arg game "$MINECRAFT_VERSION" \
       'any(.[]; .version == $game)' >/dev/null ||
       die "Minecraft version ${MINECRAFT_VERSION} is not available."
@@ -130,9 +137,8 @@ log "Minecraft: ${MINECRAFT_VERSION}"
 log "Fabric Loader: ${FABRIC_LOADER_VERSION}"
 log "Fabric Installer: ${FABRIC_INSTALLER_VERSION}"
 
+
 # Prepare current manifest information
-FABRIC_LAUNCHER_FILE="fabric-server-launcher.jar"
-FABRIC_LAUNCHER_PATH="./${FABRIC_LAUNCHER_FILE}"
 FABRIC_LAUNCHER_URL="${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}/${FABRIC_LOADER_VERSION}/${FABRIC_INSTALLER_VERSION}/server/jar"
 
 CURRENT_MANIFEST="$(
@@ -206,6 +212,99 @@ else
     die "Unable to write Fabric manifest."
 
   log "Updated Fabric manifest."
+fi
+
+
+# Optional Modrinth mods configuration
+if [[ -f "$MODS_CONFIG_FILE" ]]; then
+  log "Using Mods configuration file: \"$MODS_CONFIG_FILE\""
+
+  MODS_CONFIG_FILE_REMOVE_OLD="$(jq -r '.removeOld // true' "$MODS_CONFIG_FILE")"
+
+  if [[ "$MODS_CONFIG_FILE_REMOVE_OLD" == "true" ]]; then
+    declare -a MODS_CONFIG_FILE_REMOVE_OLD_IGNORE_PATTERNS=()
+
+    while IFS= read -r pattern; do
+      [[ -n "$pattern" ]] && MODS_CONFIG_FILE_REMOVE_OLD_IGNORE_PATTERNS+=("$pattern")
+    done < <(jq -r '.removeOldIgnore[]? | strings' "$MODS_CONFIG_FILE")
+
+    shopt -s dotglob nullglob
+
+    for path in "$DATA_DIR"/mods/*; do
+      [[ -e "$path" || -L "$path" ]] || continue
+
+      filename="${path##*/}"
+      preserve=false
+
+      for pattern in "${MODS_CONFIG_FILE_REMOVE_OLD_IGNORE_PATTERNS[@]}"; do
+        if [[ "$filename" == $pattern ]]; then
+          preserve=true
+          break
+        fi
+      done
+
+      if [[ "$preserve" == "true" ]]; then
+        log "Preserving mod: $filename"
+        continue
+      fi
+
+      rm -rf -- "$path"
+    done
+
+    shopt -u dotglob nullglob
+  fi
+
+  MODS_CONFIG_FILE_DOWNLOAD_DEPENDENCIES="$(jq -r '.downloadDependencies // false' "$MODS_CONFIG_FILE")"
+
+  while IFS= read -r mod_id; do
+    [[ -n "$mod_id" ]] || continue
+
+    log "Downloading Modrinth mod: $mod_id"
+
+    versions_url="${MODRINTH_API}/project/${mod_id}/version"
+    versions="$(curl -fsSG \
+      --data-urlencode "game_versions=[\"${MINECRAFT_VERSION}\"]" \
+      --data-urlencode 'loaders=["fabric"]' \
+      "$versions_url")"
+
+    version="$(jq -ce '.[0]' <<< "$versions")" ||
+      die "No compatible version found for $mod_id"
+
+    download_url="$(jq -er '(.files | map(select(.primary == true)) | .[0] // .files[0]).url' <<< "$version")"
+    filename="$(jq -er '(.files | map(select(.primary == true)) | .[0] // .files[0]).filename' <<< "$version")"
+
+    [[ "$filename" != */* && "$filename" != "." && "$filename" != ".." ]] ||
+      die "Invalid filename for $mod_id"
+
+    curl -fsSL "$download_url" -o "$DATA_DIR/mods/$filename" ||
+      die "Failed to download $mod_id"
+
+    if [[ "$MODS_CONFIG_FILE_DOWNLOAD_DEPENDENCIES" == "true" ]]; then
+        while IFS= read -r dependency_id; do
+          [[ -n "$dependency_id" ]] || continue
+
+          dependency_versions="$(curl -fsSG \
+            --data-urlencode "game_versions=[\"${MINECRAFT_VERSION}\"]" \
+            --data-urlencode 'loaders=["fabric"]' \
+            "${MODRINTH_API}/project/${dependency_id}/version")"
+
+          dependency_version="$(jq -ce '.[0]' <<< "$dependency_versions")" ||
+            die "No compatible version found for dependency $dependency_id"
+
+          dependency_url="$(jq -er '(.files | map(select(.primary == true)) | .[0] // .files[0]).url' <<< "$dependency_version")"
+          dependency_filename="$(jq -er '(.files | map(select(.primary == true)) | .[0] // .files[0]).filename' <<< "$dependency_version")"
+
+          [[ "$dependency_filename" != */* && "$dependency_filename" != "." && "$dependency_filename" != ".." ]] || 
+            die "Invalid filename for dependency $dependency_id"
+
+          curl -fsSL "$dependency_url" -o "$DATA_DIR/mods/$dependency_filename" ||
+            die "Failed to download dependency $dependency_id"
+        done < <(
+          jq -r '.dependencies[]? | select(.dependency_type == "required") | .project_id // empty' \
+            <<< "$version"
+        )
+    fi
+  done < <(jq -r '.download[]? | select(.platform == "modrinth") | .id' "$MODS_CONFIG_FILE")
 fi
 
 

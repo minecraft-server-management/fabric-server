@@ -1,8 +1,12 @@
 {
   "$schema": "../schema/mods.v1.schema.json",
-  "removeOld": true,
   "downloadDependencies": true,
-  "mods": [
-    { "platform": "modrinth", "id": "fabric-api" }
+  "download": [{
+    "platform": "modrinth",
+    "id": "fabric-api"
+  }],
+  "removeOld": true,
+  "removeOldIgnore": [
+    "sodium*.jar"
   ]
 }

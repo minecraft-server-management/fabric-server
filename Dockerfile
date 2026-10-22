@@ -15,12 +15,8 @@ ENV FABRIC_INSTALLER_VERSION=latest-stable
 
 WORKDIR /data
 
-COPY ./src/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY ./src/healthcheck.sh /usr/local/bin/healthcheck.sh
-
-RUN chmod +x \
-  /usr/local/bin/entrypoint.sh \
-  /usr/local/bin/healthcheck.sh
+COPY --chmod=755 ./src/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=755 ./src/healthcheck.sh /usr/local/bin/healthcheck.sh
 
 RUN mkdir -p /data \
   && chown -R 1000:1000 /data
