@@ -1,0 +1,34 @@
+{
+  "$id": "mods.v1.schema",
+  "description": "Schema for mods.json file.",
+  "type": "object",
+  "properties": {
+    "removeOld": {
+      "type": "boolean",
+      "default": true,
+      "description": "If old mods should be removed before downloading new ones.\nThis cleans out the entire \"mods\" directory!"
+    },
+    "downloadDependencies": {
+      "type": "boolean",
+      "description": "If dependencies for mods should be resolved and downloaded automatically."
+    },
+    "mods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [ "platform", "id" ],
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [ "modrinth" ],
+            "description": "Choosing the Platform."
+          },
+          "id": {
+            "type": "string",
+            "description": "ID of the mod."
+          }
+        }
+      }
+    }
+  }
+}

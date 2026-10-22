@@ -1,0 +1,8 @@
+{
+  "$schema": "../schema/mods.v1.schema.json",
+  "removeOld": true,
+  "downloadDependencies": true,
+  "mods": [
+    { "platform": "modrinth", "id": "abcd1234" }
+  ]
+}
