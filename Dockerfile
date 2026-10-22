@@ -7,11 +7,11 @@ RUN apk add --no-cache \
   ca-certificates \
   netcat-openbsd
 
+ENV EULA=false
 ENV MEMORY=4G
 ENV MINECRAFT_VERSION=latest-release
 ENV FABRIC_LOADER_VERSION=latest-stable
 ENV FABRIC_INSTALLER_VERSION=latest-stable
-ENV EULA=false
 
 WORKDIR /data
 
