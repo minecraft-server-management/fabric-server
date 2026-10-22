@@ -10,13 +10,13 @@ A Docker-based Minecraft fabricmc server.
 
 ## Quick Start
 
-Create a `compose.yml` file or use the [`compose.yml`](./compose.yml) example:
+Create a `compose.yml` file or use the [`compose.yml`](./examples/compose.yml) example:
 
 ```yaml
 services:
   server:
     image: ghcr.io/minecraft-server-management/fabric-server:latest
-    container_name: fabric-server
+    container_name: "fabric-server"
     restart: unless-stopped
 
     ports:
