@@ -1,0 +1,60 @@
+{
+  "$id": "mods.v1.schema",
+  "description": "Schema for mods.json file.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "Schema to use."
+    },
+    "removeOld": {
+      "type": "boolean",
+      "default": true,
+      "description": "If old mods should be removed before downloading new ones.\nThis cleans out the entire \"mods\" directory!"
+    },
+    "downloadDependencies": {
+      "type": "boolean",
+      "default": true,
+      "description": "If dependencies for mods should be resolved and downloaded automatically."
+    },
+    "download": {
+      "type": "array",
+      "default": [],
+      "description": "List of Mods to download.",
+      "items": {
+        "type": "object",
+        "examples": [{
+          "platform": "modrinth",
+          "id": "fabric-api"
+        }],
+        "description": "Mod definition.",
+        "required": [
+          "platform",
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "modrinth"
+            ],
+            "description": "Choosing the Platform."
+          },
+          "id": {
+            "type": "string",
+            "description": "ID of the mod.",
+            "examples": [
+              "fabric-api"
+            ]
+          },
+          "downloadDependencies": {
+            "type": "boolean",
+            "default": true,
+            "description": "If dependencies for this mod should be resolved and downloaded automatically."
+          }
+        }
+      }
+    }
+  }
+}

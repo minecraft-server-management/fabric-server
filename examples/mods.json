@@ -1,0 +1,9 @@
+{
+  "$schema": "../schema/mods.v1.schema.json",
+  "removeOld": true,
+  "downloadDependencies": true,
+  "download": [{
+    "platform": "modrinth",
+    "id": "fabric-api"
+  }]
+}

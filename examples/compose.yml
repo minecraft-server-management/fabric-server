@@ -12,6 +12,8 @@ services:
 
     volumes:
       - ./data:/data
+      - ./mods:/mods
+      - ./mods.json:/config/mods.json
 
     stdin_open: true
     tty: true
