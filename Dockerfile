@@ -22,6 +22,8 @@ RUN mkdir -p /data \
   && chown -R 1000:1000 /data
 
 VOLUME ["/data"]
+VOLUME ["/config"]
+VOLUME ["/mods"]
 
 EXPOSE 25565/tcp
 

@@ -12,15 +12,6 @@
       "default": true,
       "description": "If old mods should be removed before downloading new ones.\nThis cleans out the entire \"mods\" directory!"
     },
-    "removeOldIgnore": {
-      "type": "array",
-      "default": [],
-      "description": "Glob patterns for filenames to preserve when removeOld is enabled.",
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "downloadDependencies": {
       "type": "boolean",
       "default": true,
