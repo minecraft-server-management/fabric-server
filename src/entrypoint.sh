@@ -10,7 +10,7 @@ set -Eeuo pipefail
 : "${MODS_CONFIG_FILE:=/config/mods.json}"
 
 DATA_DIR="/data"
-MANIFEST_FILE="${DATA_DIR}/.fabric-manifest.json"
+MANIFEST_FILE="${DATA_DIR}/.fabric.manifest.json"
 
 FABRIC_META_URL="https://meta.fabricmc.net"
 FABRIC_VERSIONS_META_URL="${FABRIC_META_URL}/v2/versions"
