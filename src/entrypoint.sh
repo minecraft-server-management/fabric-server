@@ -225,9 +225,9 @@ else
   [[ -s "$FABRIC_LAUNCHER_FILE" ]] ||
     die "  Fabric Launcher does not exist: ${FABRIC_LAUNCHER_PATH}"
   
-  log "Downloading Fabric server launcher ... done"
+  log "  Downloading Fabric server launcher ... done"
 
-  log "Updating Fabric manifest ..."
+  log "  Updating Fabric manifest ..."
 
   # Add timestamp and save the updated manifest
   UPDATED_MANIFEST="$(
@@ -238,7 +238,7 @@ else
   printf '%s\n' "$UPDATED_MANIFEST" > "$MANIFEST_FILE" ||
     die "  Unable to write Fabric manifest."
 
-  log "Updating Fabric manifest ... done"
+  log "  Updating Fabric manifest ... done"
 fi
 
 log "Prepare manifest ... done"
