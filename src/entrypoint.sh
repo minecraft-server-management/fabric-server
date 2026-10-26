@@ -274,6 +274,15 @@ if [[ -f "$MODS_CONFIG_FILE" ]]; then
   while IFS= read -r mod_id; do
     [[ -n "$mod_id" ]] || continue
 
+    MODS_CONFIG_FILE_MOD_DOWNLOAD_DEPENDENCIES="$(
+      jq -r \
+        --arg mod_id "$mod_id" \
+        --argjson default "$MODS_CONFIG_FILE_DOWNLOAD_DEPENDENCIES" \
+        '([.download[]? | select(.platform == "modrinth" and .id == $mod_id)][0] // {}) |
+         if has("downloadDependency") then .downloadDependency else $default end' \
+        "$MODS_CONFIG_FILE"
+    )"
+
     mod_name="$(curl -fsSL "${MODRINTH_API}/project/${mod_id}" | jq -er '.title')"
 
     log "    Downloading Modrinth mod: $mod_id ($mod_name)"
@@ -296,7 +305,7 @@ if [[ -f "$MODS_CONFIG_FILE" ]]; then
     curl -fsSL "$download_url" -o "$DATA_DIR/mods/$filename" ||
       die "    Failed to download $mod_id"
 
-    if [[ "$MODS_CONFIG_FILE_DOWNLOAD_DEPENDENCIES" == "true" ]]; then
+    if [[ "$MODS_CONFIG_FILE_MOD_DOWNLOAD_DEPENDENCIES" == "true" ]]; then
         while IFS= read -r dependency_id; do
           [[ -n "$dependency_id" ]] || continue
 
