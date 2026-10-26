@@ -158,7 +158,7 @@ To use a specific image version, replace `latest` in the image reference with th
 View server logs:
 
 ```bash
-docker compose logs -f server
+docker logs -f fabric-server
 ```
 
 Note that logs are read-only. Use `docker attach fabric-server` to interact with the Minecraft console.
