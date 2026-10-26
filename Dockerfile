@@ -17,6 +17,7 @@ WORKDIR /data
 
 COPY --chmod=755 ./src/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --chmod=755 ./src/healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY --chmod=775 ./src/console.sh /usr/local/bin/console
 
 RUN mkdir -p /data \
   && chown -R 1000:1000 /data

@@ -140,6 +140,14 @@ volumes:
   - ./data:/data
 ```
 
+## Console
+
+Use the provided console to send commands to the server.
+
+```bash
+docker exec fabric-server console 'list'
+```
+
 ## Updating
 
 Pull the latest image and recreate the container:

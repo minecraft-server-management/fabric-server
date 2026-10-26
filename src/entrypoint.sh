@@ -11,6 +11,7 @@ set -Eeuo pipefail
 
 DATA_DIR="/data"
 MANIFEST_FILE="${DATA_DIR}/.fabric.manifest.json"
+CONSOLE_FIFO="/tmp/console.fifo"
 
 FABRIC_META_URL="https://meta.fabricmc.net"
 FABRIC_VERSIONS_META_URL="${FABRIC_META_URL}/v2/versions"
@@ -354,8 +355,14 @@ log "Prepare mods ... done"
 # Start server
 log ""
 
+rm -f "$CONSOLE_FIFO"
+mkfifo "$CONSOLE_FIFO"
+
+exec 3<>"$CONSOLE_FIFO"
+
 exec java \
   "-Xms${MEMORY}" \
   "-Xmx${MEMORY}" \
   -jar "${FABRIC_LAUNCHER_FILE}" \
-  nogui
+  nogui \
+  < "$CONSOLE_FIFO"
