@@ -15,20 +15,20 @@ Create a `compose.yml` file or use the [`compose.yml`](./examples/compose.yml) e
 ```yaml
 services:
   server:
-    image: ghcr.io/minecraft-server-management/fabric-server:latest
-    container_name: "fabric-server"
+    image: 'ghcr.io/minecraft-server-management/fabric-server:latest'
+    container_name: 'fabric-server'
     restart: unless-stopped
 
     ports:
-      - "25565:25565"
+      - '25565:25565'
 
     environment:
-      EULA: "true"
-      MEMORY: "4G"
-      MINECRAFT_VERSION: "26.2"
+      EULA: 'true'
+      MEMORY: '4G'
+      MINECRAFT_VERSION: '26.2'
 
     volumes:
-      - ./data:/data
+      - './data:/data'
 
     stdin_open: true
     tty: true
@@ -62,9 +62,23 @@ The server can be configured using environment variables.
 | `FABRIC_LOADER_VERSION`    | `latest-stable`  | Fabric Loader version, or `latest`, `latest-stable`, `latest-unstable`    |
 | `FABRIC_INSTALLER_VERSION` | `latest-stable`  | Fabric Installer version, or `latest`, `latest-stable`, `latest-unstable` |
 
-### Mods (`mods.json`)
+### Ports
 
-Mods can be downloaded automatically by mounting a `mods.json` file into the container at `/config/mods.json`.
+The default Minecraft Java Edition port is `25565/TCP`.
+
+You can change the port, by mapping it, like so:
+
+```yaml
+ports:
+  # ...
+  - '25565:25565'
+```
+
+### Mods
+
+#### Remote
+
+Mods can be downloaded automatically.
 
 A schema for the `mods.json` can be found in [`schema/mods.v1.schema.json`](./schema/mods.v1.schema.json).
 
@@ -72,14 +86,12 @@ A schema for the `mods.json` can be found in [`schema/mods.v1.schema.json`](./sc
 > - **Mod source:** Only Modrinth is currently supported by `mods.json`.
 > - **Dependencies:** Dependencies are downloaded automatically by default. You can disable dependency downloads globally or for an individual mod using `downloadDependencies`.
 > - **Existing mods:** With `removeOld` set to `true`, the entire mods directory is cleaned before the configured mods are downloaded. This also removes manually installed mods. Set it to `false` if you want to preserve existing files.
-> - **Manual mods:** The `/mods` mount allows you to provide your own mod files. At the start, all files inside the `/mods` mount are copied to the `/data/mods` directory.
 
-#### Example
-
-Create a `mods.json` file next to your `compose.yml`:
+To configure this behavior, create a `mods.json` file next to your `compose.yml`:
 
 ```json
 {
+  "$schema": "https://raw.githubusercontent.com/minecraft-server-management/fabric-server/refs/heads/main/schema/mods.v1.schema.json"
   "removeOld": true,
   "downloadDependencies": true,
   "download": [
@@ -96,18 +108,37 @@ Create a `mods.json` file next to your `compose.yml`:
 }
 ```
 
-Mount the configuration file in your `compose.yml`:
+Mount the configuration file:
 
 ```yaml
 volumes:
-  - ./data:/data
-  - ./mods:/mods
+  # ...
   - ./mods.json:/config/mods.json
+```
+
+#### Local
+
+The `/mods` mount allows you to provide your own mod files. At the start, all files inside the `/mods` mount are copied to the `/data/mods` directory.
+
+Mount the directory:
+
+```yaml
+volumes:
+  # ...
+  - ./mods:/mods
 ```
 
 ### Data
 
-All server data is stored in `/data`. Mount this directory to your local host.
+All server data is stored in `/data`.
+
+Mount the directory:
+
+```yaml
+volumes:
+  # ...
+  - ./data:/data
+```
 
 ## Updating
 
@@ -131,9 +162,3 @@ docker compose logs -f server
 ```
 
 Note that logs are read-only. Use `docker attach fabric-server` to interact with the Minecraft console.
-
-## Ports
-
-The default Minecraft Java Edition port is `25565/TCP`.
-
-Make sure the port is accessible through your firewall if players need to connect from outside your network.
