@@ -49,8 +49,9 @@ docker attach fabric-server
 
 To detach without stopping the server, press <kbd>Ctrl+P</kbd>, then <kbd>Ctrl+Q</kbd>.
 
-## Server Configuration
+## Configuration
 
+### Server
 The server can be configured using environment variables.
 
 | Variable                   | Default          | Description                                                               |
@@ -61,11 +62,19 @@ The server can be configured using environment variables.
 | `FABRIC_LOADER_VERSION`    | `latest-stable`  | Fabric Loader version, or `latest`, `latest-stable`, `latest-unstable`    |
 | `FABRIC_INSTALLER_VERSION` | `latest-stable`  | Fabric Installer version, or `latest`, `latest-stable`, `latest-unstable` |
 
-## Mod Configuration (`mods.json`)
+### Mods (`mods.json`)
 
-Mods can be downloaded automatically from Modrinth by mounting a `mods.json` file into the container at `/config/mods.json`.
+Mods can be downloaded automatically by mounting a `mods.json` file into the container at `/config/mods.json`.
 
-### Example
+A schema for the `mods.json` can be found in [`schema/mods.v1.schema.json`](./schema/mods.v1.schema.json).
+
+> [!IMPORTANT]
+> - **Mod source:** Only Modrinth is currently supported by `mods.json`.
+> - **Dependencies:** Dependencies are downloaded automatically by default. You can disable dependency downloads globally or for an individual mod using `downloadDependencies`.
+> - **Existing mods:** With `removeOld` set to `true`, the entire mods directory is cleaned before the configured mods are downloaded. This also removes manually installed mods. Set it to `false` if you want to preserve existing files.
+> - **Manual mods:** The `/mods` mount allows you to provide your own mod files. At the start, all files inside the `/mods` mount are copied to the `/data/mods` directory.
+
+#### Example
 
 Create a `mods.json` file next to your `compose.yml`:
 
@@ -96,40 +105,9 @@ volumes:
   - ./mods.json:/config/mods.json
 ```
 
-### Configuration Options
+### Data
 
-| Option                 | Type    | Default | Description                                                                                                                             |
-|------------------------|---------|---------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `removeOld`            | Boolean | `true`  | Removes existing files from the entire mods directory before downloading the configured mods. Set to `false` to preserve existing mods. |
-| `downloadDependencies` | Boolean | `true`  | Automatically resolves and downloads mod dependencies.                                                                                  |
-| `download`             | Array   | `[]`    | List of mods to download from the configured platform.                                                                                  |
-
-Each entry in the `download` array supports the following properties:
-
-| Property               | Type    | Required | Default | Description                                                                   |
-|------------------------|---------|----------|---------|-------------------------------------------------------------------------------|
-| `platform`             | String  | Yes      | -       | Mod source. Currently, only `modrinth` is supported.                          |
-| `id`                   | String  | Yes      | -       | Modrinth project ID or slug, for example `fabric-api`.                        |
-| `downloadDependencies` | Boolean | No       | `true`  | Controls automatic dependency resolution for this mod. (Not implemented yet!) |
-
-### Important Notes
-
-- **Mod source:** Only Modrinth is currently supported by `mods.json`.
-- **Dependencies:** Dependencies are downloaded automatically by default. You can disable dependency downloads globally or for an individual mod using `downloadDependencies`.
-- **Existing mods:** With `removeOld` set to `true`, the entire mods directory is cleaned before the configured mods are downloaded. This can remove manually installed mods as well. Set it to `false` if you want to preserve existing files.
-- **Manual mods:** The `/mods` mount allows you to provide your own mod files. Be aware that `removeOld: true` can remove these files during preparation.
-- **Schema validation:** The complete JSON Schema is available at [`./schema/mods.v1.schema.json`](./schema/mods.v1.schema.json).
-
-## Data Persistence
-
-All server data is stored in `./data` on the host:
-
-- World files
-- Mods and configurations
-- Server properties
-- Logs
-
-The data directory persists when the container is recreated or the image is updated.
+All server data is stored in `/data`. Mount this directory to your local host.
 
 ## Updating
 
