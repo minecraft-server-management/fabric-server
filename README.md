@@ -91,7 +91,7 @@ To configure this behavior, create a `mods.json` file next to your `compose.yml`
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/minecraft-server-management/fabric-server/refs/heads/main/schema/mods.v1.schema.json"
+  "$schema": "https://raw.githubusercontent.com/minecraft-server-management/fabric-server/refs/heads/main/schema/mods.v1.schema.json",
   "removeOld": true,
   "downloadDependencies": true,
   "download": [
