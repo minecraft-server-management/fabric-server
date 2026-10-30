@@ -2,7 +2,7 @@ services:
   server:
     image: 'ghcr.io/minecraft-server-management/fabric-server:latest'
     container_name: 'fabric-server'
-    restart: unless-stopped
+    restart: on-failure:3
     environment:
       EULA: 'true'
       MEMORY: '4G'

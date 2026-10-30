@@ -17,7 +17,7 @@ services:
   server:
     image: 'ghcr.io/minecraft-server-management/fabric-server:latest'
     container_name: 'fabric-server'
-    restart: unless-stopped
+    restart: on-failure:3
 
     ports:
       - '25565:25565'
