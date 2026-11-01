@@ -58,6 +58,8 @@ touch server.properties
 
 printf 'eula=true\n' > eula.txt
 
+console_group "Resolving versions"
+
 # Minecraft version
 if [[ "$MINECRAFT_VERSION" == "latest" ]]; then
   MINECRAFT_VERSION="$(
@@ -145,6 +147,8 @@ fi
 
 console_log "Resolved Fabric Installer version: ${FABRIC_INSTALLER_VERSION}"
 
+console_group
+
 
 # Manifest
 console_group "Prepare manifest"
@@ -227,10 +231,19 @@ fi
 
 console_group
 
+# Remove old mods
+/app/remove_old_mods.sh "$MODS_CONFIG_FILE"
 
-# mods configuration
+
+# Resolve and download mods
 console_info "Platform: Modrinth"
 /app/platform/modrinth/download.sh 1.21.1 "$MODS_CONFIG_FILE"
+
+
+# Copy mods
+console_info "Copying files from /mods to /data/mods"
+/app/copy_mods_directory.sh
+
 
 # Start server
 console_info "Starting server"

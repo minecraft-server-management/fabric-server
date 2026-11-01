@@ -51,3 +51,18 @@ import() {
 
   source "${import_path}"
 }
+
+# Checks if the given command exists, else fails.
+#
+# Arguments:
+#   $1 - command to check.
+#
+# Examples:
+#   require_command "curl"
+#   require_command "jq"
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || {
+    console_error "Required command not found: $1"
+    exit 1
+  }
+}

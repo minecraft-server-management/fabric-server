@@ -17,7 +17,7 @@ MODS_DIR="${MODS_DIR:-/data/mods}"
 MODRINTH_API="${MODRINTH_API:-https://api.modrinth.com/v2}"
 MODRINTH_LOADER="${MODRINTH_LOADER:-fabric}"
 
-USER_AGENT="minecraft-server-management/fabric-server"
+USER_AGENT="ghcr.io/minecraft-server-management/fabric-server"
 
 import "../../logging.sh"
 
@@ -67,11 +67,6 @@ trap cleanup EXIT
 die() {
   console_error "$*"
   exit 1
-}
-
-require_command() {
-  command -v "$1" >/dev/null 2>&1 ||
-    die "Required command not found: $1"
 }
 
 api_get() {
@@ -743,9 +738,9 @@ main() {
   MINECRAFT_VERSION="$1"
   local config_file="$2"
 
-  require_command curl
-  require_command jq
-  require_command sha1sum
+  require_command "curl"
+  require_command "jq"
+  require_command "sha1sum"
 
   load_config "${config_file}"
 
