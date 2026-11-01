@@ -6,12 +6,12 @@
     {
       "platform": "modrinth",
       "id": "fabric-api",
-      "downloadDependency": true
+      "downloadDependencies": true
     },
     {
       "platform": "modrinth",
       "id": "sodium",
-      "downloadDependency": false
+      "downloadDependencies": false
     },
     {
       "platform": "modrinth",

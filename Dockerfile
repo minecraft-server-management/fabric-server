@@ -4,9 +4,15 @@ RUN apk add --no-cache \
   bash \
   curl \
   jq \
+  # unzip \
+  # coreutils \
   ca-certificates \
   netcat-openbsd
 
+# Internal
+ENV BASH_ENV=/app/bootstrap.sh
+
+# Extrernal
 ENV EULA=false
 ENV MEMORY=4G
 ENV MINECRAFT_VERSION=latest-release
@@ -15,9 +21,9 @@ ENV FABRIC_INSTALLER_VERSION=latest-stable
 
 WORKDIR /data
 
-COPY --chmod=755 ./src/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY --chmod=755 ./src/healthcheck.sh /usr/local/bin/healthcheck.sh
-COPY --chmod=775 ./src/console.sh /usr/local/bin/console
+COPY --chmod=755 ./src/ /app/
+
+RUN ln -s /app/console.sh /usr/local/bin/console
 
 RUN mkdir -p /data \
   && chown -R 1000:1000 /data
@@ -33,8 +39,8 @@ HEALTHCHECK \
   --timeout=5s \
   --start-period=120s \
   --retries=3 \
-  CMD ["/usr/local/bin/healthcheck.sh"]
+  CMD ["/app/healthcheck.sh"]
 
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
