@@ -48,6 +48,10 @@
               "fabric-api"
             ]
           },
+          "version": {
+            "type": "string",
+            "description": "Optional version to pin this mod to. If omitted, the latest compatible version is resolved."
+          },
           "downloadDependencies": {
             "type": "boolean",
             "default": true,
