@@ -1,21 +1,22 @@
 {
-  "$schema": "../schema/mods.v1.schema.json",
+  "$schema": "../schema/mods.v2.schema.json",
   "removeOld": true,
-  "downloadDependencies": true,
+  "downloadDependencies": "required",
   "download": [
     {
       "platform": "modrinth",
       "id": "fabric-api",
-      "downloadDependencies": true
+      "downloadDependencies": "required"
     },
     {
       "platform": "modrinth",
       "id": "sodium",
-      "downloadDependencies": false
+      "downloadDependencies": "optional"
     },
     {
       "platform": "modrinth",
-      "id": "lithium"
+      "id": "lithium",
+      "version": "0.11.1"
     }
   ]
 }

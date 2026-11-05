@@ -39,8 +39,8 @@ HEALTHCHECK \
   --timeout=5s \
   --start-period=120s \
   --retries=3 \
-  CMD ["/app/healthcheck.sh"]
+  CMD ["/app/container/health_check.sh"]
 
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/main.sh"]

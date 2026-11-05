@@ -31,6 +31,8 @@
 #   console_group
 #
 
+set -Eeuo pipefail
+
 # Prevent multiple imports
 if [[ -n "${_LOGGING_SH_LOADED:-}" ]]; then
   return 0
