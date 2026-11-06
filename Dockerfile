@@ -4,7 +4,7 @@ RUN apk add --no-cache \
   bash \
   curl \
   jq \
-  # unzip \
+  unzip \
   # coreutils \
   ca-certificates \
   netcat-openbsd
