@@ -10,7 +10,7 @@ RUN apk add --no-cache \
   netcat-openbsd
 
 # Internal
-ENV BASH_ENV=/app/bootstrap.sh
+ENV BASH_ENV=/app/globals.sh
 
 # Extrernal
 ENV EULA=false
@@ -23,7 +23,7 @@ WORKDIR /data
 
 COPY --chmod=755 ./src/ /app/
 
-RUN ln -s /app/console.sh /usr/local/bin/console
+RUN ln -s /app/container/console.sh /usr/local/bin/console
 
 RUN mkdir -p /data \
   && chown -R 1000:1000 /data

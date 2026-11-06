@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mods.v1.schema",
+  "description": "Schema for mods.json file.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "Schema to use."
+    },
+    "removeOld": {
+      "type": "boolean",
+      "default": true,
+      "description": "If old mods should be removed before downloading new ones.\nThis cleans out the entire \"mods\" directory!"
+    },
+    "downloadDependencies": {
+      "type": "string",
+      "enum": [
+        "required",
+        "optional",
+        "none"
+      ],
+      "default": "required",
+      "description": "If dependencies for mods should be resolved and downloaded automatically."
+    },
+    "download": {
+      "type": "array",
+      "default": [ ],
+      "description": "List of Mods to download.",
+      "items": {
+        "description": "Mod definition.",
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "oneOf": [
+          {
+            "description": "Modrinth mod definition.",
+            "type": "object",
+            "examples": [
+              {
+                "type": "modrinth:mod",
+                "id": "fabric-api"
+              },
+              {
+                "type": "modrinth:mod",
+                "id": "sodium",
+                "version": "0.5.8"
+              },
+              {
+                "type": "modrinth:mod",
+                "id": "lithium",
+                "downloadDependencies": "none"
+              }
+            ],
+            "properties": {
+              "type": {
+                "description": "Modrinth Mod",
+                "const": "modrinth:mod"
+              },
+              "id": {
+                "description": "ID of the mod.",
+                "type": "string"
+              },
+              "version": {
+                "description": "Optional version to pin this mod to. If omitted, the latest compatible version is resolved.",
+                "type": "string"
+              },
+              "downloadDependencies": {
+                "description": "If dependencies for this mod should be resolved and downloaded automatically.",
+                "type": "string",
+                "enum": [
+                  "required",
+                  "optional",
+                  "none"
+                ],
+                "default": "required"
+              }
+            },
+            "required": [ "type", "id" ],
+            "additionalProperties": false
+          },
+          {
+            "description": "Modrinth pack definition.",
+            "type": "object",
+            "examples": [
+              {
+                "type": "modrinth:pack",
+                "path": "path/to/my/pack.mrpack"
+              }
+            ],
+            "properties": {
+              "type": {
+                "description": "Modrinth Pack",
+                "const": "modrinth:pack"
+              },
+              "path": {
+                "description": "Path to the .mrpack inside the container.\nMount your local directory that contains the .mrpack, to the container volume ('./packs:/packs')\n\nExamples:\nLocal path `./packs/my_pack.mrpack` -> Specify `./my_pack.mrpack` here\nLocal path `./packs/adventure/my_adventure_pack.mrpack` -> Specify `./adventure/my_adventure_pack.mrpack` here",
+                "type": "string"
+              },
+              "downloadDependencies": {
+                "description": "If dependencies for any mod in this pack should be resolved and downloaded automatically.",
+                "type": "string",
+                "enum": [
+                  "required",
+                  "optional",
+                  "none"
+                ],
+                "default": "required"
+              }
+            },
+            "required": [ "type", "path" ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  }
+}
