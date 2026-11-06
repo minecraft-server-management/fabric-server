@@ -139,6 +139,14 @@ _resolve_project() {
 }
 
 
+# Resolve a list of projects and its dependencies into a JSON tree.
+# 
+# Arguments:
+#   $1: Minecraft version
+#   $2: List of projects
+#
+# Returns:
+#   JSON object array representing the projects and their dependencies.
 resolve_projects() {
   local minecraft_version="$1"
   local mods_json="$2"
