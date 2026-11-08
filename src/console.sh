@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-set -e
+set -Eeuo pipefail
 
-CONSOLE_FIFO="/tmp/console.fifo"
+CONSOLE_FIFO="/server.fifo"
 
 if [[ ! -p "$CONSOLE_FIFO" ]]; then
-  echo "Minecraft console pipe not found." >&2
+  console_error 'Server console pipe not found.'
   exit 1
 fi
 
 if [[ $# -eq 0 ]]; then
-  echo "Usage: console <command>" >&2
+  console_log 'Usage: console <command>'
   exit 2
 fi
 

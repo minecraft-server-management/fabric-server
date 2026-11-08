@@ -1,4 +1,6 @@
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25-jre-alpine AS runtime
+
+SHELL ["/bin/sh", "-e", "-u", "-o", "pipefail", "-c"]
 
 RUN apk add --no-cache \
   bash \
@@ -11,6 +13,7 @@ RUN apk add --no-cache \
 
 # Internal
 ENV BASH_ENV=/app/globals.sh
+ENV CONSOLE_DEBUG=true
 
 # Extrernal
 ENV EULA=false
@@ -21,16 +24,16 @@ ENV FABRIC_INSTALLER_VERSION=latest-stable
 
 WORKDIR /data
 
+RUN install -d /data -o 1000 -g 1000
+
 COPY --chmod=755 ./src/ /app/
 
-RUN ln -s /app/container/console.sh /usr/local/bin/console
-
-RUN mkdir -p /data \
-  && chown -R 1000:1000 /data
+RUN ln -s /app/console.sh /usr/local/bin/console
 
 VOLUME ["/data"]
 VOLUME ["/config"]
 VOLUME ["/mods"]
+VOLUME ["/packs"]
 
 EXPOSE 25565/tcp
 

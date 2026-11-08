@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-# Imports
-import "./logging.sh"
+import './logging/console_log.sh'
+import './logging/console_info.sh'
+import './logging/console_error.sh'
+import './logging/console_group.sh'
+
 
 # Configuration
 : "${EULA:=false}"
@@ -10,21 +13,22 @@ import "./logging.sh"
 : "${MINECRAFT_VERSION:=latest-release}"
 : "${FABRIC_LOADER_VERSION:=latest-stable}"
 : "${FABRIC_INSTALLER_VERSION:=latest-stable}"
-: "${MODS_CONFIG_FILE:=/config/mods.json}"
+: "${DOWNLOADS_CONFIG_FILE:=/config/downloads.json}"
 
-DATA_DIR="/data"
+DATA_DIR='/data'
 MANIFEST_FILE="${DATA_DIR}/.fabric.manifest.json"
-CONSOLE_FIFO="/tmp/console.fifo"
+SERVER_FIFO='/server.fifo'
 
-FABRIC_META_URL="https://meta.fabricmc.net"
-FABRIC_VERSIONS_META_URL="${FABRIC_META_URL}/v2/versions"
-FABRIC_INSTALLER_META_URL="${FABRIC_VERSIONS_META_URL}/installer"
-FABRIC_LOADER_META_URL="${FABRIC_VERSIONS_META_URL}/loader"
-FABRIC_LAUNCHER_FILE="fabric-server-launcher.jar"
-FABRIC_LAUNCHER_PATH="./${FABRIC_LAUNCHER_FILE}"
-FABRIC_GAME_VERSIONS_URL="${FABRIC_VERSIONS_META_URL}/game"
+FABRIC_META_URL='https://meta.fabricmc.net'
+FABRIC_META_VERSIONS_URL="${FABRIC_META_URL}/v2/versions"
+FABRIC_META_INSTALLER_URL="${FABRIC_META_VERSIONS_URL}/installer"
+FABRIC_META_LOADER_URL="${FABRIC_META_VERSIONS_URL}/loader"
+FABRIC_META_GAME_URL="${FABRIC_META_VERSIONS_URL}/game"
 
-MODRINTH_API="https://api.modrinth.com/v2"
+FABRIC_LAUNCHER_FILE='fabric-server-launcher.jar'
+FABRIC_LAUNCHER_FILE_PATH="./${FABRIC_LAUNCHER_FILE}"
+
+MODRINTH_API='https://api.modrinth.com/v2'
 
 cd "$DATA_DIR"
 
@@ -41,7 +45,7 @@ console_log "- MEMORY: '$MEMORY'"
 console_log "- MINECRAFT_VERSION: '$MINECRAFT_VERSION'"
 console_log "- FABRIC_LOADER_VERSION: '$FABRIC_LOADER_VERSION'"
 console_log "- FABRIC_INSTALLER_VERSION: '$FABRIC_INSTALLER_VERSION'"
-console_log "- MODS_CONFIG_FILE: '$MODS_CONFIG_FILE'"
+console_log "- DOWNLOADS_CONFIG_FILE: '$DOWNLOADS_CONFIG_FILE'"
 console_group
 
 if [[ "${EULA,,}" != "true" ]]; then
@@ -63,21 +67,21 @@ console_group "Resolving versions"
 # Minecraft version
 if [[ "$MINECRAFT_VERSION" == "latest" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_GAME_URL" |
       jq -er '.[0].version'
   )" || die "Unable to resolve the latest Minecraft version."
 elif [[ "$MINECRAFT_VERSION" == "latest-release" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_GAME_URL" |
       jq -er '[.[] | select(.stable == true)][0].version'
   )" || die "Unable to resolve the latest release Minecraft version."
 elif [[ "$MINECRAFT_VERSION" == "latest-snapshot" ]]; then
   MINECRAFT_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_GAME_URL" |
       jq -er '[.[] | select(.stable == false)][0].version'
   )" || die "Unable to resolve the latest snapshot Minecraft version."
 else
-  curl -fsSL --retry 3 "$FABRIC_GAME_VERSIONS_URL" |
+  curl -fsSL --retry 3 "$FABRIC_META_GAME_URL" |
     jq -e --arg game "$MINECRAFT_VERSION" \
       'any(.[]; .version == $game)' >/dev/null ||
       die "  Minecraft version ${MINECRAFT_VERSION} is not available."
@@ -90,27 +94,27 @@ console_log "Resolved Minecraft Version: ${MINECRAFT_VERSION}"
 if [[ "$FABRIC_LOADER_VERSION" == "latest" ]]; then
   FABRIC_LOADER_VERSION="$(
     curl -fsSL --retry 3 \
-      "${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}" |
+      "${FABRIC_META_LOADER_URL}/${MINECRAFT_VERSION}" |
       jq -er '.[0].loader.version'
   )" || die "Unable to resolve the latest Fabric Loader version for Minecraft ${MINECRAFT_VERSION}."
 
 elif [[ "$FABRIC_LOADER_VERSION" == "latest-stable" ]]; then
   FABRIC_LOADER_VERSION="$(
     curl -fsSL --retry 3 \
-      "${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}" |
+      "${FABRIC_META_LOADER_URL}/${MINECRAFT_VERSION}" |
       jq -er '[.[] | select(.loader.stable == true)][0].loader.version'
   )" || die "Unable to resolve the latest stable Fabric Loader version for Minecraft ${MINECRAFT_VERSION}."
 
 elif [[ "$FABRIC_LOADER_VERSION" == "latest-unstable" ]]; then
   FABRIC_LOADER_VERSION="$(
     curl -fsSL --retry 3 \
-      "${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}" |
+      "${FABRIC_META_LOADER_URL}/${MINECRAFT_VERSION}" |
       jq -er '[.[] | select(.loader.stable == false)][0].loader.version'
   )" || die "Unable to resolve the latest unstable Fabric Loader version for Minecraft ${MINECRAFT_VERSION}."
 
 else
   curl -fsSL --retry 3 \
-    "${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}" |
+    "${FABRIC_META_LOADER_URL}/${MINECRAFT_VERSION}" |
     jq -e --arg loader "$FABRIC_LOADER_VERSION" \
       'any(.[]; .loader.version == $loader)' >/dev/null ||
       die "Fabric Loader version ${FABRIC_LOADER_VERSION} is not available for Minecraft ${MINECRAFT_VERSION}."
@@ -122,24 +126,24 @@ console_log "Resolved Fabric Loader version: ${FABRIC_LOADER_VERSION}"
 # Fabric installer version
 if [[ "$FABRIC_INSTALLER_VERSION" == "latest" ]]; then
   FABRIC_INSTALLER_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_INSTALLER_META_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_INSTALLER_URL" |
       jq -er '.[0].version'
   )" || die "Unable to resolve the latest Fabric Installer version."
 
 elif [[ "$FABRIC_INSTALLER_VERSION" == "latest-stable" ]]; then
   FABRIC_INSTALLER_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_INSTALLER_META_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_INSTALLER_URL" |
       jq -er '[.[] | select(.stable == true)][0].version'
   )" || die "Unable to resolve the latest Fabric Installer version."
 
 elif [[ "$FABRIC_INSTALLER_VERSION" == "latest-unstable" ]]; then
   FABRIC_INSTALLER_VERSION="$(
-    curl -fsSL --retry 3 "$FABRIC_INSTALLER_META_URL" |
+    curl -fsSL --retry 3 "$FABRIC_META_INSTALLER_URL" |
       jq -er '[.[] | select(.stable == false)][0].version'
   )" || die "Unable to resolve the latest Fabric Installer version."
 
 else
-  curl -fsSL --retry 3 "$FABRIC_INSTALLER_META_URL" |
+  curl -fsSL --retry 3 "$FABRIC_META_INSTALLER_URL" |
     jq -e --arg installer "$FABRIC_INSTALLER_VERSION" \
       'any(.[]; .version == $installer)' >/dev/null ||
       die "Fabric Installer version ${FABRIC_INSTALLER_VERSION} is not available."
@@ -153,11 +157,11 @@ console_group
 # Manifest
 console_group "Prepare manifest"
 
-FABRIC_LAUNCHER_URL="${FABRIC_LOADER_META_URL}/${MINECRAFT_VERSION}/${FABRIC_LOADER_VERSION}/${FABRIC_INSTALLER_VERSION}/server/jar"
+FABRIC_LAUNCHER_URL="${FABRIC_META_LOADER_URL}/${MINECRAFT_VERSION}/${FABRIC_LOADER_VERSION}/${FABRIC_INSTALLER_VERSION}/server/jar"
 
 CURRENT_MANIFEST="$(
   jq -n \
-    --arg launcher "$FABRIC_LAUNCHER_PATH" \
+    --arg launcher "$FABRIC_LAUNCHER_FILE_PATH" \
     --arg file "$FABRIC_LAUNCHER_FILE" \
     --arg game "$MINECRAFT_VERSION" \
     --arg loader "$FABRIC_LOADER_VERSION" \
@@ -190,7 +194,7 @@ fi
 # Download launcher and update manifest if needed
 if [[ "$MANIFEST_MATCH" == true ]]; then
   console_log "Fabric manifest matches the requested versions."
-  console_log "Reusing launcher: '$FABRIC_LAUNCHER_PATH'"
+  console_log "Reusing launcher: '$FABRIC_LAUNCHER_FILE_PATH'"
 else
   console_log "Fabric installation is missing or out of date."
 
@@ -213,7 +217,7 @@ else
   mv -f "$FABRIC_LAUNCHER_FILE_TMP" "$FABRIC_LAUNCHER_FILE"
 
   [[ -s "$FABRIC_LAUNCHER_FILE" ]] ||
-    die "Fabric Launcher does not exist: ${FABRIC_LAUNCHER_PATH}"
+    die "Fabric Launcher does not exist: ${FABRIC_LAUNCHER_FILE_PATH}"
   
   console_log "Downloading Fabric server launcher"
 
@@ -232,12 +236,12 @@ fi
 console_group
 
 # Remove old mods
-/app/remove_old_mods.sh "$MODS_CONFIG_FILE"
+/app/remove_old_mods.sh "$DOWNLOADS_CONFIG_FILE"
 
 
 # Resolve and download mods
 console_info "Platform: Modrinth"
-/app/platform/modrinth/download.sh 1.21.1 "$MODS_CONFIG_FILE"
+/app/platform/modrinth/download.sh "$MINECRAFT_VERSION" "$DOWNLOADS_CONFIG_FILE"
 
 
 # Copy mods
@@ -248,14 +252,14 @@ console_info "Copying files from /mods to /data/mods"
 # Start server
 console_info "Starting server"
 
-rm -f "$CONSOLE_FIFO"
-mkfifo "$CONSOLE_FIFO"
+# rm -f "$SERVER_FIFO"
+# mkfifo "$SERVER_FIFO"
 
-exec 3<>"$CONSOLE_FIFO"
+# exec 3<>"$SERVER_FIFO"
 
-exec java \
-  "-Xms${MEMORY}" \
-  "-Xmx${MEMORY}" \
-  -jar "${FABRIC_LAUNCHER_FILE}" \
-  nogui \
-  < "$CONSOLE_FIFO"
+# exec java \
+#   "-Xms${MEMORY}" \
+#   "-Xmx${MEMORY}" \
+#   -jar "${FABRIC_LAUNCHER_FILE}" \
+#   nogui \
+#   < "$SERVER_FIFO"

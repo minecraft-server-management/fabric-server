@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+MODRINTH_API="${MODRINTH_API:-https://api.modrinth.com/v2}"
 
-set -Eeuo pipefail
+USER_AGENT="ghcr.io/minecraft-server-management/fabric-server"
 
 # Perform a GET request to the Modrinth API.
 #

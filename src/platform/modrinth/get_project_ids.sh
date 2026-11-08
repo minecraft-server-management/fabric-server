@@ -1,7 +1,3 @@
-#!/usr/bin/env bash
-
-set -Eeuo pipefail
-
 # Extract all unique project IDs from the dependency tree
 #
 # Arguments:

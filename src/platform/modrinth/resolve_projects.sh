@@ -2,20 +2,21 @@
 
 set -Eeuo pipefail
 
-import "../../logging.sh"
+import "../../logging/console_error.sh"
+import "../../logging/console_debug.sh"
+import "../../logging/console_group.sh"
 import "./api_get.sh"
+import "./get_project_slug.sh"
 import "../encode_uri.sh"
 
 
 # Configuration
-MODRINTH_API="${MODRINTH_API:-https://api.modrinth.com/v2}"
 MODRINTH_LOADER="${MODRINTH_LOADER:-fabric}"
 
-USER_AGENT="ghcr.io/minecraft-server-management/fabric-server"
 
 # Globals
-declare -A RESOLVED_PROJECT_NODES=()
-declare -A IN_PROGRESS_PROJECTS=()
+declare -gA RESOLVED_PROJECT_NODES=()
+declare -gA IN_PROGRESS_PROJECTS=()
 
 
 # Resolve a single project and its dependencies into a JSON tree node.
@@ -34,13 +35,22 @@ _resolve_project() {
   local pinned_version="${3:-}"
   local allowed_dependencies="${4:-required}"
 
-  if [[ -n "${RESOLVED_PROJECT_NODES[$project_id]+x}" ]]; then
+  project_id=$(get_project_slug "$project_id")
+
+  console_group "Resolving Project"
+  console_log "minecraft_version: $minecraft_version"
+  console_log "project_id: $project_id"
+  console_log "pinned_version: $pinned_version"
+  console_log "allowed_dependencies: $allowed_dependencies"
+  console_group
+
+  if [[ ${RESOLVED_PROJECT_NODES[$project_id]+x} ]]; then
     echo "${RESOLVED_PROJECT_NODES[$project_id]}"
     return
 
   fi
 
-  if [[ -n "${IN_PROGRESS_PROJECTS[$project_id]+x}" ]]; then
+  if [[ ${IN_PROGRESS_PROJECTS[$project_id]+x} ]]; then
     echo "null"
     return
 
@@ -93,7 +103,7 @@ _resolve_project() {
     local dependency_id
     local dependency_type
 
-    dependency_id=$(echo "$dependency" | jq -r '.project_id')
+    dependency_id=$(get_project_slug "$(echo "$dependency" | jq -r '.project_id')")
     dependency_type=$(echo "$dependency" | jq -r '.dependency_type')
 
     [[ "$dependency_id" == "null" || -z "$dependency_id" ]] && continue
@@ -149,25 +159,25 @@ _resolve_project() {
 #   JSON object array representing the projects and their dependencies.
 resolve_projects() {
   local minecraft_version="$1"
-  local mods_json="$2"
+  local downloads_list_json="$2"
 
   local -a root_nodes=()
 
-  while IFS= read -r mod; do
-    local id
-    local version
-    local dependency_type
+  while IFS= read -r project; do
+    local project_id
+    local project_version
+    local project_dependency_type
     local node
 
-    id=$(echo "$mod" | jq -r '.id')
-    version=$(echo "$mod" | jq -r '.version // empty')
-    dependency_type=$(echo "$mod" | jq -r '.downloadDependencies // "required"')
+    project_id=$(echo "$project" | jq -r '.id')
+    project_version=$(echo "$project" | jq -r '.version // empty')
+    project_dependency_type=$(echo "$project" | jq -r '.downloadDependencies // "required"')
 
-    node=$(_resolve_project "$minecraft_version" "$id" "$version" "$dependency_type")
+    node=$(_resolve_project "$minecraft_version" "$project_id" "$project_version" "$project_dependency_type")
     
     root_nodes+=("$node")
 
-  done < <(echo "$mods_json" | jq -c '.[]')
+  done < <(echo "$downloads_list_json" | jq -c '.[]')
 
   if (( ${#root_nodes[@]} == 0 )); then
     echo "[]"
