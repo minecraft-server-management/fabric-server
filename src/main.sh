@@ -17,7 +17,6 @@ import './logging/console_group.sh'
 
 DATA_DIR='/data'
 MANIFEST_FILE="${DATA_DIR}/.fabric.manifest.json"
-SERVER_FIFO='/server.fifo'
 
 FABRIC_META_URL='https://meta.fabricmc.net'
 FABRIC_META_VERSIONS_URL="${FABRIC_META_URL}/v2/versions"

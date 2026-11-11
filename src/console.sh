@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CONSOLE_FIFO="/server.fifo"
-
-if [[ ! -p "$CONSOLE_FIFO" ]]; then
+if [[ ! -p "$SERVER_FIFO" ]]; then
   console_error 'Server console pipe not found.'
   exit 1
 fi
@@ -13,4 +11,4 @@ if [[ $# -eq 0 ]]; then
   exit 2
 fi
 
-printf '%s\n' "$*" > "$CONSOLE_FIFO"
+printf '%s\n' "$*" > "$SERVER_FIFO"

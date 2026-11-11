@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# FIFO file for stdin/stdout
+SERVER_FIFO="/server.fifo"
 
 # Tracks imported Bash scripts.
 declare -gA _IMPORT_LOADED_FILES=()
