@@ -13,10 +13,12 @@ import './_print_formatted.sh'
 # Output:
 #   Writes a debug message to stderr when enabled.
 console_debug() {
+  [[ "$CONSOLE_DEBUG" == "true" ]] || return 0
+
   local message="$1"
   local end="${2-$'\n'}"
 
-  [[ "$CONSOLE_DEBUG" == "true" ]] || return 0
+  local COLOR_DEBUG='\x1b[38;5;245m'
 
-  _print_formatted "$_COLOR_DEBUG" "$message" "$end" >&2
+  _print_formatted "$COLOR_DEBUG" "$message" "" "$end" >&2
 }

@@ -15,5 +15,5 @@ console_link() {
   local url="$2"
   local end="${3-$'\n'}"
 
-  _print_formatted "" "\x1b]8;;${url}\x1b\\\\${message}\x1b]8;;\x1b\\\\" "$end" >&2
+  _print_formatted "\x1b]8;;${url}\x1b\\\\" "$message" "\x1b]8;;\x1b\\\\" "$end" >&2
 }

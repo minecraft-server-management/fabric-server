@@ -13,5 +13,7 @@ console_error() {
   local message="$1"
   local end="${2-$'\n'}"
 
-  _print_formatted "$_COLOR_ERROR" "$message" "$end" >&2
+  local COLOR_ERROR='\x1b[38;5;9m'
+
+  _print_formatted "$COLOR_ERROR" "$message" "" "$end" >&2
 }

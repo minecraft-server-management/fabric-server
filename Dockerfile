@@ -13,6 +13,7 @@ RUN apk add --no-cache \
 
 # Internal
 ENV BASH_ENV=/app/globals.sh
+ENV NO_COLOR=false
 ENV CONSOLE_DEBUG=true
 
 # Extrernal

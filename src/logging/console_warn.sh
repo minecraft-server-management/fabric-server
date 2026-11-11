@@ -13,5 +13,7 @@ console_warn() {
   local message="$1"
   local end="${2-$'\n'}"
 
-  _print_formatted "$_COLOR_WARN" "$message" >&2
+  local COLOR_WARN='\x1b[38;5;11m'
+
+  _print_formatted "$COLOR_WARN" "$message" "" "$end" >&2
 }

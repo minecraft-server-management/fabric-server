@@ -3,7 +3,7 @@ import '../../logging/console_info.sh'
 import '../../logging/console_error.sh'
 import '../../logging/console_success.sh'
 import './resolve_projects.sh'
-import './get_project_ids.sh'
+import '../get_project_ids.sh'
 import '../print_projects_tree.sh'
 
 
@@ -24,8 +24,8 @@ main() {
 
   local minecraft_version="$1"
   local downloads_config_file="$2"
+
   local projects_tree_json
-  local projects_list_json
 
   download_list_json="$(
     jq -r '.download // []' "${downloads_config_file}"
@@ -43,7 +43,7 @@ main() {
   print_projects_tree "$projects_tree_json"
 
   console_log ""
-  console_log "Resolved ${#project_ids[@]} unique projects"  
+  console_log "Resolved ${#project_ids[@]} unique projects"
 
   sleep 5
 

@@ -13,5 +13,7 @@ console_info() {
   local message="$1"
   local end="${2-$'\n'}"
 
-  _print_formatted "$_COLOR_INFO" "$message" "$end" >&2
+  local COLOR_INFO='\x1b[38;5;12m'
+
+  _print_formatted "$COLOR_INFO" "$message" "" "$end" >&2
 }

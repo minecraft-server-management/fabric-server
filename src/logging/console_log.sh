@@ -13,5 +13,5 @@ console_log() {
   local message="$1"
   local end="${2-$'\n'}"
 
-  _print_formatted "" "$message" "$end" >&2
+  _print_formatted "" "$message" "" "$end" >&2
 }
