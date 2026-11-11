@@ -1,8 +1,4 @@
-#!/usr/bin/env bash
-
-set -Eeuo pipefail
-
-import "../../logging.sh"
+import "../../logging/console_log.sh"
 
 
 # Resolve a modrinth .mrpack into a JSON tree.
@@ -18,25 +14,46 @@ resolve_mrpack() {
   console_debug "Path to .mrpack: '$mrpack_path'"
 
   unzip -p "$mrpack_path" modrinth.index.json | jq -c '.files[]' | while IFS= read -r entry; do
-    local url
-    url=$(echo "$entry" | jq -r '.downloads[0]')
+    local raw_url
+    raw_url=$(echo "$entry" | jq -r '.downloads[0]')
 
-    local project_id version_id
-    project_id=$(echo "$url" | sed -n 's|.*/data/\([^/]\{8\}\)/versions/.*|\1|p')
-    version_id=$(echo "$url" | sed -n 's|.*/versions/\([^/]\{8\}\)/.*|\1|p')
+    local project_id
+    project_id=$(get_project_slug "$(echo $raw_url | sed -n 's|.*/data/\([^/]\{8\}\)/versions/.*|\1|p')")
 
-    local name
-    name=$(curl -s "https://api.modrinth.com/v2/project/${project_id}" | jq -r '.title')
+    local project_info
+    project_info=$(api_get "/project/${project_id}")
 
-    local file_name
-    file_name=$(echo "$entry" | jq -r '.path | split("/") | last')
+    local project_version_number
+    project_version_number=$(echo "$raw_url" | sed -n 's|.*/versions/\([^/]\{8\}\)/.*|\1|p')
+
+    local project_name
+    project_name=$(echo "$project_info" | jq -r '.title')
+
+    local project_file_url
+    project_file_url="$raw_url"
+
+    local project_file_name
+    project_file_name=$(echo "$entry" | jq -r '.path | split("/") | last')
+
+    local project_url
+    project_url="https://modrinth.com/project/${project_id}/version/${project_version_number}"
 
     jq -cn \
-      --arg id "$project_id" \
-      --arg version "$version_id" \
-      --arg name "$name" \
-      --arg url "$url" \
-      --arg fileName "$file_name" \
-      '{id: $id, version: $version, name: $name, url: $url, fileName: $fileName, dependencies: []}'
+      --arg project_id "$project_id" \
+      --arg project_version_number "$project_version_number" \
+      --arg project_name "$project_name" \
+      --arg project_file_url "$project_file_url" \
+      --arg project_file_name "$project_file_name" \
+      --arg project_url "$project_url" \
+      '{
+        id: $project_id,
+        version_number: $project_version_number,
+        name: $project_name,
+        fileUrl: $project_file_url,
+        fileName: $project_file_name,
+        url: $project_url,
+        dependencies: []
+      }'
+
   done | jq -s '.'
 }
