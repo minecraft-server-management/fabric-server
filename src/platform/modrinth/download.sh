@@ -1,4 +1,5 @@
 import '../../logging/console_log.sh'
+import '../../logging/console_info.sh'
 import '../../logging/console_error.sh'
 import '../../logging/console_success.sh'
 import './resolve_projects.sh'
@@ -30,17 +31,22 @@ main() {
     jq -r '.download // []' "${downloads_config_file}"
   )"
 
+  console_log 'Resolving projects ... (this might take a while)'
+
   projects_tree_json="$(resolve_projects "$minecraft_version" "$download_list_json")" ||
     die "Failed to resolve projects and dependencies"
 
-  echo "$projects_tree_json" | jq .
-
+  local -a project_ids
+  mapfile -t project_ids < <(get_project_ids "$projects_tree_json") ||
+    die "Failed to retrieve project IDs"
+  
   print_projects_tree "$projects_tree_json"
+
+  console_log ""
+  console_log "Resolved ${#project_ids[@]} unique projects"  
 
   sleep 5
 
-  # projects_list_json=$(get_project_ids "$projects_tree_json") ||
-  #   die "Failed to retrieve project IDs"
 
   console_success "All mods downloaded successfully"
 }

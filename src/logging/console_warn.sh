@@ -4,12 +4,14 @@ import './_print_formatted.sh'
 # Prints a warning message.
 #
 # Arguments:
-#   $* - Message to print
+#   $1 - Message to print
+#   $2 - End character to print (default \n)
 #
 # Output:
-#   Writes a yellow-colored message to stderr.
+#   Writes a warning message to stderr.
 console_warn() {
-  local message="$*"
+  local message="$1"
+  local end="${2-$'\n'}"
 
   _print_formatted "$_COLOR_WARN" "$message" >&2
 }

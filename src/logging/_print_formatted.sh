@@ -20,6 +20,7 @@ fi
 _print_formatted() {
   local color="$1"
   local message="$2"
+  local end="${3-$'\n'}"
 
   local indent=""
 
@@ -28,6 +29,6 @@ _print_formatted() {
     indent+="$(printf '%*s' "$_CONSOLE_INDENT_SIZE" '')"
   done
 
-  printf '%s%b%s%b\n' \
-    "$indent" "$color" "$message" "$_COLOR_RESET"
+  printf '%b%b%b%b%s' \
+    "$indent" "$color" "$message" "$_COLOR_RESET" "$end"
 }

@@ -37,13 +37,6 @@ _resolve_project() {
 
   project_id=$(get_project_slug "$project_id")
 
-  console_group "Resolving Project"
-  console_log "minecraft_version: $minecraft_version"
-  console_log "project_id: $project_id"
-  console_log "pinned_version: $pinned_version"
-  console_log "allowed_dependencies: $allowed_dependencies"
-  console_group
-
   if [[ ${RESOLVED_PROJECT_NODES[$project_id]+x} ]]; then
     echo "${RESOLVED_PROJECT_NODES[$project_id]}"
     return
@@ -68,6 +61,7 @@ _resolve_project() {
   local project_version_number
   local project_file_url
   local project_file_name
+  local project_url
 
   project_info=$(api_get "/project/${project_id}")
 
@@ -94,6 +88,7 @@ _resolve_project() {
   project_version_number=$(echo "$project_version" | jq -r '.[0].version_number')
   project_file_url=$(echo "$project_version" | jq -r '.[0].files[0].url')
   project_file_name=$(echo "$project_version" | jq -r '.[0].files[0].filename')
+  project_url="https://modrinth.com/project/${project_id}/version/${project_version_number}"
 
   local -a allowed_types=()
   IFS=',' read -ra allowed_types <<< "$allowed_dependencies"
@@ -134,13 +129,14 @@ _resolve_project() {
 
   local project_node
   project_node=$(jq -cn \
-    --arg id "$project_id" \
-    --arg version "$project_version_number" \
-    --arg name "$project_name" \
-    --arg url "$project_file_url" \
-    --arg fileName "$project_file_name" \
+    --arg project_id "$project_id" \
+    --arg project_version_number "$project_version_number" \
+    --arg project_name "$project_name" \
+    --arg project_file_url "$project_file_url" \
+    --arg project_file_name "$project_file_name" \
+    --arg project_url "$project_url" \
     --argjson dependencies "$dependency_json" \
-    '{id: $id, version: $version, name: $name, url: $url, fileName: $fileName, dependencies: $dependencies}')
+    '{id: $project_id, version_number: $project_version_number, name: $project_name, fileUrl: $project_file_url, fileName: $project_file_name, url: $project_url, dependencies: $dependencies}')
 
   RESOLVED_PROJECT_NODES["$project_id"]="$project_node"
   unset "IN_PROGRESS_PROJECTS[$project_id]"

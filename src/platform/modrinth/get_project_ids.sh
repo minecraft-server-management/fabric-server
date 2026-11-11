@@ -4,7 +4,7 @@
 #   $1: JSON tree (the output of resolve_projects)
 #
 # Returns:
-#   One project ID per line on stdout
+#   One project ID per line
 get_project_ids() {
   echo "$1" | jq -r '[.. | .id? // empty] | unique[]'
 }
