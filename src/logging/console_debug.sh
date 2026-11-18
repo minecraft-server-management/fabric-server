@@ -5,7 +5,7 @@ import './_print_formatted.sh'
 #
 # Arguments:
 #   $1 - Message to print
-#   $2 - End character to print (default \n)
+#   $2 - (Optional) End character to print (default \n)
 #
 # Configuration:
 #   CONSOLE_DEBUG=true - Enables debug output.

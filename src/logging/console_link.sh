@@ -6,7 +6,7 @@ import './_print_formatted.sh'
 # Arguments:
 #   $1 - Message to print
 #   $2 - URL link for the message
-#   $3 - End character to print (default \n)
+#   $3 - (Optional) End character to print (default \n)
 #
 # Output:
 #   Writes a linked message to stderr.

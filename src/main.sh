@@ -5,6 +5,7 @@ import './logging/console_log.sh'
 import './logging/console_info.sh'
 import './logging/console_error.sh'
 import './logging/console_group.sh'
+import './platform/download.sh'
 
 
 # Configuration
@@ -239,8 +240,7 @@ console_group
 
 
 # Resolve and download mods
-console_info "Platform: Modrinth"
-/app/platform/modrinth/download.sh "$MINECRAFT_VERSION" "$DOWNLOADS_CONFIG_FILE"
+download "$MINECRAFT_VERSION" "$DOWNLOADS_CONFIG_FILE"
 
 
 # Copy mods

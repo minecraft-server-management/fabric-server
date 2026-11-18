@@ -4,7 +4,7 @@ import './_print_formatted.sh'
 # Opens or closes a console group.
 #
 # Arguments:
-#   $1 - Optional group name.
+#   $1 - (Optional) group name; If omitted closes group
 #
 # Behavior:
 #   - When a group name is provided, prints the group name and
