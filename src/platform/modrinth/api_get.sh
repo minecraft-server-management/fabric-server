@@ -5,7 +5,7 @@ USER_AGENT="ghcr.io/minecraft-server-management/fabric-server"
 # Perform a GET request to the Modrinth API.
 #
 # Arguments:
-#   $1: API endpoint (e.g., "/project/{project_id}")
+#   $1 - API endpoint (e.g., "/project/{project_id}")
 #
 # Returns:
 #   JSON response from the API.
@@ -20,5 +20,5 @@ api_get() {
     --retry 3 \
     --retry-delay 1 \
     --user-agent "${USER_AGENT}" \
-    "${MODRINTH_API}${endpoint}"
+    "${MODRINTH_API}${endpoint}" 2>/dev/null
 }

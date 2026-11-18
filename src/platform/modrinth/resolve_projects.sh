@@ -1,13 +1,10 @@
-#!/usr/bin/env bash
-
-set -Eeuo pipefail
-
-import "../../logging/console_error.sh"
-import "../../logging/console_debug.sh"
-import "../../logging/console_group.sh"
-import "./api_get.sh"
-import "./get_project_slug.sh"
-import "../encode_uri.sh"
+import '../../logging/console_error.sh'
+import '../../logging/console_debug.sh'
+import '../../logging/console_group.sh'
+import './api_get.sh'
+import './get_project_slug.sh'
+import '../encode_uri.sh'
+import './is_valid_project_id.sh'
 
 
 # Configuration
@@ -15,8 +12,8 @@ MODRINTH_LOADER="${MODRINTH_LOADER:-fabric}"
 
 
 # Globals
-declare -gA RESOLVED_PROJECT_NODES=()
-declare -gA IN_PROGRESS_PROJECTS=()
+declare -gA PROJECTS_RESOLVED=()
+declare -gA PROJECTS_IN_PROGRESS=()
 
 
 # Resolve a single project and its dependencies into a JSON tree node.
@@ -25,8 +22,7 @@ declare -gA IN_PROGRESS_PROJECTS=()
 #   $1 - Minecraft version
 #   $2 - Project ID
 #   $3 - (Optional) Pinned version (if empty, the latest compatible version is used)
-#   $4 - (Optional) If dependencies should be resolved
-#   $5 - (Optional) Allowed dependency types (comma-separated, default: "required")
+#   $4 - (Optional) Dependencies to resolve, can be "none", "optional" or "required" (default: "required")
 #
 # Returns:
 #   JSON object representing the project and its dependencies.
@@ -34,24 +30,27 @@ _resolve_project() {
   local minecraft_version="$1"
   local project_id="$2"
   local project_version_pinned="${3:-}"
-  local resolve_dependencies="${4:-true}"
-  local allowed_dependencies="${5:-required}"
+  local resolve_dependencies="${4:-required}"
 
-  project_id=$(get_project_slug "$project_id")
+  is_valid_project_id "$project_id" || {
+    console_warn "Project ID '$project_id' is not a valid Modrinth project ID, skipping ..."
+    echo "null"
+    return 0
+  }
 
-  if [[ ${RESOLVED_PROJECT_NODES[$project_id]+x} && "$resolve_dependencies" == "false" ]]; then
-    echo "${RESOLVED_PROJECT_NODES[$project_id]}"
+  project_id="$(get_project_slug "$project_id")"
+
+  if [[ ${PROJECTS_RESOLVED[$project_id]+x} && "$resolve_dependencies" == "none" ]]; then
+    echo "${PROJECTS_RESOLVED[$project_id]}"
     return
 
   fi
 
-  if [[ ${IN_PROGRESS_PROJECTS[$project_id]+x} ]]; then
+  if [[ ${PROJECTS_IN_PROGRESS[$project_id]+x} ]]; then
     echo "null"
     return
 
   fi
-
-  IN_PROGRESS_PROJECTS["$project_id"]=1
 
   local project_info
   project_info=$(api_get "/project/${project_id}")
@@ -65,27 +64,33 @@ _resolve_project() {
   local encoded_loaders
   encoded_loaders=$(encode_uri "[\"${MODRINTH_LOADER}\"]")
   
-  local api_endpoint
-  api_endpoint="/project/${project_id}/version?game_versions=${encoded_game_versions}&loaders=${encoded_loaders}"
-
-  # Pin version if specified
-  if [[ -n "$project_version_pinned" ]]; then
-    api_endpoint="/project/${project_id}/version/${project_version_pinned}"
-  fi
+  
 
   local project_versions
-  project_versions=$(api_get "$api_endpoint")
-
+  
+  # Pin version if specified
   if [[ -n "$project_version_pinned" ]]; then
+    project_versions="$(api_get "/project/${project_id}/version/${project_version_pinned}")" || {
+      console_warn "Unable to resolve provided version '$project_version_pinned' for project ID '$project_id', skipping ..."
+      echo "null"
+      return 0
+    }
+
     project_versions="[$project_versions]"
+  else
+    project_versions="$(api_get "/project/${project_id}/version?game_versions=${encoded_game_versions}&loaders=${encoded_loaders}")" || {
+      console_warn "Unable to get latest version for project ID '$project_id', skipping ..."
+      echo "null"
+      return 0
+    }
   fi
 
   local project_url
   # Empty array -> no compatible version found
   if [[ "$(echo "$project_versions" | jq 'length')" == "0" ]]; then
-    console_error "No version found for '${project_id}' (mc=${minecraft_version}, loader=${MODRINTH_LOADER})"
-    unset "IN_PROGRESS_PROJECTS[$project_id]"
-    return 1
+    console_warn "No version found for project ID '${project_id}', skipping ..."
+    echo "null"
+    return 0
   fi
 
   local project_version_number
@@ -99,12 +104,11 @@ _resolve_project() {
   
   project_url="https://modrinth.com/project/${project_id}/version/${project_version_number}"
 
-  local dependency_json="[]"
+  PROJECTS_IN_PROGRESS["$project_id"]=1
   
-  if [[ "$resolve_dependencies" == "true" ]]; then
+  local dependency_json="[]"
 
-    local -a allowed_types=()
-    IFS=',' read -ra allowed_types <<< "$allowed_dependencies"
+  if [[ "$resolve_dependencies" != "none" ]]; then
 
     local -a dependency_trees=()
     while IFS= read -r dependency; do
@@ -114,24 +118,26 @@ _resolve_project() {
       local dependency_type
       dependency_type=$(echo "$dependency" | jq -r '.dependency_type')
 
+      local dependency_version=""
+
+      if [[ ${PROJECTS_RESOLVED[$dependency_id]+x} ]]; then
+        dependency_version=$(echo "${PROJECTS_RESOLVED[$dependency_id]}" | jq -r '.version_number')
+      fi
+
       [[ "$dependency_id" == "null" || -z "$dependency_id" ]] && continue
 
-      local allowed=false
-      for allowed_type in "${allowed_types[@]}"; do
-        [[ "$dependency_type" == "$allowed_type" ]] && allowed=true && break
-      done
-      $allowed || continue
+      [[ "$dependency_type" != "$resolve_dependencies" ]] && continue
 
       local dependency_tree
-      dependency_tree=$(_resolve_project "$minecraft_version" "$dependency_id" "" "true" "$allowed_dependencies")
+      dependency_tree=$(_resolve_project "$minecraft_version" "$dependency_id" "$dependency_version" "$resolve_dependencies")
       [[ "$dependency_tree" == "null" ]] && continue
 
       dependency_trees+=("$dependency_tree")
 
-    done < <(echo "$project_versions" | jq -c '.[0].dependencies[]')
+    done < <(echo "$project_versions" | jq -c '.[0].dependencies // [] | .[]')
 
     if (( ${#dependency_trees[@]} > 0 )); then
-      dependency_json=$(printf '%s\n' "${dependency_trees[@]}" | jq -s '.')
+      dependency_json=$(echo "${dependency_trees[@]}" | jq -s '.')
     fi
   fi
 
@@ -154,8 +160,8 @@ _resolve_project() {
       dependencies: $dependencies
     }')
 
-  RESOLVED_PROJECT_NODES["$project_id"]="$project_node"
-  unset "IN_PROGRESS_PROJECTS[$project_id]"
+  PROJECTS_RESOLVED["$project_id"]="$project_node"
+  unset "PROJECTS_IN_PROGRESS[$project_id]"
 
   echo "$project_node"
 }
@@ -164,8 +170,8 @@ _resolve_project() {
 # Resolve a list of projects and its dependencies into a JSON tree.
 # 
 # Arguments:
-#   $1: Minecraft version
-#   $2: List of projects
+#   $1 - Minecraft version
+#   $2 - List of projects
 #
 # Returns:
 #   JSON object array representing the projects and their dependencies.
@@ -173,9 +179,9 @@ resolve_projects() {
   local minecraft_version="$1"
   local downloads_list_json="$2"
 
-  local -a root_nodes=()
+  local -a projects=()
 
-  # Phase 1: Resolve all root nodes without dependencies
+  # Resolve all root nodes without dependencies
   while IFS= read -r project; do
     local project_id
     project_id=$(echo "$project" | jq -r '.id')
@@ -183,42 +189,34 @@ resolve_projects() {
     local project_version
     project_version=$(echo "$project" | jq -r '.version // empty')
 
-    local project_dependency_type
-    project_dependency_type=$(echo "$project" | jq -r '.downloadDependencies // "required"')
-
-    local node
-    node=$(_resolve_project "$minecraft_version" "$project_id" "$project_version" "false" "$project_dependency_type")
-    
-    root_nodes+=("$node")
+    # We don''t care about the output, this is just to resolve all root projects
+    _resolve_project "$minecraft_version" "$project_id" "$project_version" "none" &>/dev/null
 
   done < <(echo "$downloads_list_json" | jq -c '.[]')
 
-  # Phase 2: Resolve dependencies for all root nodes
-  local -a resolved_root_nodes=()
-
-  for node in "${root_nodes[@]}"; do
+  # Resolve all root nodes with dependencies
+  while IFS= read -r project; do
     local project_id
-    project_id=$(echo "$node" | jq -r '.id')
-
-
-    local project_dependency
-    project_dependency=$(echo "$downloads_list_json" | jq -r --arg id "$project_id" '.[] | select(.id == $id)')
-
-    local project_dependency_type
-    project_dependency_type=$(echo "$project_dependency" | jq -r '.downloadDependencies // "required"')
+    project_id=$(echo "$project" | jq -r '.id')
 
     local project_version
-    project_version=$(echo "$project_dependency" | jq -r '.version // empty')
+    project_version=$(echo "$project" | jq -r '.version // empty')
 
-    local resolved_node
-    resolved_node=$(_resolve_project "$minecraft_version" "$project_id" "$project_version" "true" "$project_dependency_type")
+    local resolve_dependencies
+    resolve_dependencies=$(echo "$project" | jq -r '.downloadDependencies // "required"')
 
-    resolved_root_nodes+=("$resolved_node")
-  done
+    local project
+    project=$(_resolve_project "$minecraft_version" "$project_id" "$project_version" "$resolve_dependencies")
 
-  if (( ${#resolved_root_nodes[@]} == 0 )); then
+    [[ "$project" == "null" ]] && continue
+    
+    projects+=("$project")
+
+  done < <(echo "$downloads_list_json" | jq -c '.[]')
+
+  if (( ${#projects[@]} == 0 )); then
     echo "[]"
   else
-    echo "${resolved_root_nodes[@]}" | jq -s '.'
+    echo "${projects[@]}" | jq -s '.'
   fi
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+import './die.sh'
 import './logging/console_log.sh'
 import './logging/console_info.sh'
 import './logging/console_error.sh'
@@ -32,11 +33,6 @@ MODRINTH_API='https://api.modrinth.com/v2'
 
 cd "$DATA_DIR"
 
-
-die() {
-  console_error "$*"
-  exit 1
-}
 
 # Prepare
 console_group "Environment"
